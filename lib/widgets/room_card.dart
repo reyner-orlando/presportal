@@ -1,0 +1,112 @@
+import 'package:flutter/material.dart';
+import '../models/room.dart';
+import 'facility_tag.dart';
+
+const Color primaryColor = Color(0xFF1e40af);
+const Color secondaryColor = Color(0xFF8b5cf6);
+const Color cardColor = Colors.white;
+
+class RoomCard extends StatelessWidget {
+  final Room room;
+  final VoidCallback? onBooking;
+
+  const RoomCard({super.key, required this.room, this.onBooking});
+
+  @override
+  Widget build(BuildContext context) {
+    double opacity = room.isAvailable ? 1.0 : 0.6;
+
+    return Opacity(
+      opacity: opacity,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0).copyWith(bottom: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(room.name,
+                            style: const TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(Icons.location_on, size: 12, color: Colors.grey.shade600),
+                            const SizedBox(width: 4),
+                            Text(room.location,
+                                style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                ],
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              child: Divider(height: 1),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16.0).copyWith(top: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.people, size: 16, color: Colors.grey.shade600),
+                      const SizedBox(width: 8),
+                      Text('Capacity: ${room.capacity} people',
+                          style: TextStyle(fontSize: 14, color: Colors.grey.shade700)),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8.0,
+                    runSpacing: 8.0,
+                    children: room.facilities.map((f) => FacilityTag(text: f)).toList(),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: room.isAvailable ? onBooking : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      ),
+                      child: Text(room.isAvailable ? 'Book This Room' : 'Unavailable',
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "475849675976",
+    "project_id": "presportal-f9049",
+    "storage_bucket": "presportal-f9049.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:475849675976:android:69458428265ec0d8cb41fd",
+        "android_client_info": {
+          "package_name": "com.example.projectwmp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAQ5_K_YsozJczrprt83y9GsKTm7I61r20"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
