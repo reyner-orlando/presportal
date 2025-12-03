@@ -8,11 +8,16 @@ class BookingService {
   /// Simpan booking baru
   Future<void> addBooking({
     required String activityType,
-    required String venueName,
+    required String venueId,
     required DateTime date,
     required String studentId,
+    required String venueName,
   }) async {
     final docRef = _firestore.collection('bookings').doc();
+    final studentSnap = await _firestore.collection('students').doc(studentId).get();
+    String fetchedStudentName = studentSnap.exists
+        ? (studentSnap.data()?['name'] ?? 'Unknown Student')
+        : 'Unknown ID' ;
 
     final booking = Booking(
       id: docRef.id,
@@ -20,24 +25,15 @@ class BookingService {
       activityType: activityType,
       status: "Pending",
       date: date,
-      studentRef: _firestore.doc("students/$studentId"),
-      venueRef: _firestore.doc("venues/$venueName"),
+      studentId: studentId,
+      studentName: fetchedStudentName,
+      venueId: venueId,
+      venueName: venueName,
     );
 
     await docRef.set(booking.toMap());
   }
 
-
-  /// Ambil studentName & venueName dari reference
-  Future<Booking> attachDetails(Booking booking) async {
-    final studentSnap = await booking.studentRef.get();
-    final venueSnap   = await booking.venueRef.get();
-
-    booking.studentName = studentSnap['name'];
-    booking.venueName   = venueSnap['name'];
-
-    return booking;
-  }
 
   /// Ambil booking berdasarkan tanggal dan otomatis fetch nama student + venue
   Stream<List<Booking>> getBookingsByDate(DateTime date) {
@@ -50,19 +46,13 @@ class BookingService {
         .where('date', isLessThanOrEqualTo: end)
         .orderBy('date')
         .snapshots()
-        .asyncMap((snapshot) async {
+        .asyncMap((snapshot) {
 
       // Convert Firestore → Booking
-      final bookings = snapshot.docs
+      return snapshot.docs
           .map((doc) => Booking.fromMap(doc.id, doc.data()))
           .toList();
 
-      // Fetch detail studentName & venueName
-      for (var b in bookings) {
-        await attachDetails(b);
-      }
-
-      return bookings;
     });
   }
 }

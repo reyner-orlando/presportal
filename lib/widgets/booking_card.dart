@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/booking.dart';
-import '../services/booking_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// import '../services/booking_service.dart';
+// import 'package:cloud_firestore/cloud_firestore.dart';
 
 class BookingCard extends StatelessWidget {
   final Booking booking;
@@ -60,7 +60,7 @@ class BookingCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    "Venue: ${booking.venueName ?? 'Unknown'}",
+                    booking.venueName,
                     style: const TextStyle(fontSize: 15),
                   ),
                 )
@@ -75,7 +75,7 @@ class BookingCard extends StatelessWidget {
                 const Icon(Icons.person, color: Colors.teal, size: 20),
                 const SizedBox(width: 8),
                 Text(
-                  booking.studentName ?? 'Unknown Student',
+                  booking.studentName,
                   style: const TextStyle(fontSize: 15),
                 ),
               ],

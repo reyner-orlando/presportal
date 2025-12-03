@@ -87,20 +87,6 @@ class RoomCard extends StatelessWidget {
                     children: room.facilities.map((f) => FacilityTag(text: f)).toList(),
                   ),
                   const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: room.isAvailable ? onBooking : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                      ),
-                      child: Text(room.isAvailable ? 'Book This Room' : 'Unavailable',
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-                    ),
-                  ),
                 ],
               ),
             ),

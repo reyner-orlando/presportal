@@ -15,6 +15,7 @@ class _HomeWrapperState extends State<HomeWrapper> {
   final _pages = [
     HomePage(),
     RoomBookingPage(),
+    const Scaffold(body: Center(child: Text("Halaman Profil"))),
   ];
   Widget _buildCircleIcon(IconData icon, {required bool isSelected}) {
     return Container(

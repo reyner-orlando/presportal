@@ -6,13 +6,11 @@ class Booking {
   final String bookingId;
   final DateTime date;
   final String status;
+  final String studentId;
+  final String studentName;
+  final String venueId;
+  final String venueName;
 
-  final DocumentReference studentRef;
-  final DocumentReference venueRef;
-
-  // populated after attachDetails()
-  String? studentName;
-  String? venueName;
 
   Booking({
     required this.id,
@@ -20,10 +18,10 @@ class Booking {
     required this.bookingId,
     required this.date,
     required this.status,
-    required this.studentRef,
-    required this.venueRef,
-    this.studentName,
-    this.venueName,
+    required this.studentId,
+    required this.studentName,
+    required this.venueId,
+    required this.venueName,
   });
 
   factory Booking.fromMap(String id, Map<String, dynamic> map) {
@@ -33,8 +31,10 @@ class Booking {
       bookingId: map['bookingid'] ?? '',
       date: (map['date'] as Timestamp).toDate(),
       status: map['status'] ?? '',
-      studentRef: map['userid'],     // sesuai Firestore
-      venueRef: map['venueid'],      // sesuai Firestore
+      studentId: map['userid'],
+      studentName: map['username'],
+      venueId: map['venueid'],
+      venueName: map['venuename'],
     );
   }
 
@@ -44,8 +44,10 @@ class Booking {
       'bookingid': bookingId,
       'date': date,
       'status': status,
-      'userid': studentRef,
-      'venueid': venueRef,
+      'userid': studentId,
+      'venueid': venueId,
+      'username': studentName,
+      'venuename': venueName,
     };
   }
 }

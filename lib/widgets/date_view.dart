@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../models/booking.dart';
@@ -22,15 +23,16 @@ class DateView extends StatefulWidget {
 }
 
 class _DateViewState extends State<DateView> {
-  String? selectedVenue;
+  String? selectedVenueId;
   String? selectedActivity;
+  String? selectedVenueName;
   final bookingService = BookingService();
-  Map<String, String> venueMap = {
-    "Lab A216": "0001",
-    "B204": "0002",
-    "Lab 402": "0003",
-    "Meeting Room": "0004",
-  };
+  // Map<String, String> venueMap = {
+  //   "Lab A216": "0001",
+  //   "B204": "0002",
+  //   "Lab 402": "0003",
+  //   "Meeting Room": "0004",
+  // };
 
   // gunakan selectedDay dari parent
   late DateTime _selectedDay;
@@ -100,27 +102,46 @@ class _DateViewState extends State<DateView> {
                 const SizedBox(height: 12),
 
                 // ------------ VENUE DROPDOWN ------------
-                const Text("Select Venue"),
-                const SizedBox(height: 6),
+                StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance.collection('venues').orderBy('name').snapshots(),
 
-                DropdownButtonFormField<String>(
-                  value: selectedVenue,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    labelText: "Venue",
-                  ),
-                  items: [
-                    "B204",
-                    "Lab A216",
-                    "Lab 402",
-                    "Meeting Room",
-                  ].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
-                  onChanged: (value) {
-                    setState(() => selectedVenue = value);
+                  builder: (context, snapshot) {
+                    if(!snapshot.hasData){
+                      return const Center(child:CircularProgressIndicator());
+                    }
+
+                    if(snapshot.data!.docs.isEmpty) {
+                      return const Text("No venues yet");
+                    }
+
+                    List<DropdownMenuItem<String>> venueItems = snapshot.data!.docs.map((doc) {
+                      Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+
+                      return DropdownMenuItem<String>(
+                        value: doc.id,
+                        child: Text(data['name']),
+                      );
+                    }).toList();
+
+                    return DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(labelText: 'Choose venue/room'),
+                      value: selectedVenueId,
+                      items: venueItems,
+                      hint: const Text("Choose one"),
+
+                      onChanged: (String? newId) {
+                        setState(() {
+                          selectedVenueId = newId;
+
+                          final selectedDoc = snapshot.data!.docs.firstWhere((doc) => doc.id == newId);
+                          selectedVenueName = selectedDoc['name'];
+
+                          print("User choose: $selectedVenueName (ID: $selectedVenueId)");
+                        });
+                      },
+                    );
                   },
                 ),
-
-                const SizedBox(height: 18),
 
                 // ------------ ACTIVITY RADIO ------------
                 const Text("Activity Type"),
@@ -163,7 +184,7 @@ class _DateViewState extends State<DateView> {
                 // ------------ CONFIRM BUTTON ------------
                 ElevatedButton(
                   onPressed: () async {
-                    if (selectedVenue == null || selectedActivity == null) {
+                    if (selectedVenueId == null || selectedActivity == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text("Please complete all fields"),
@@ -172,9 +193,10 @@ class _DateViewState extends State<DateView> {
                       return;
                     }
 
-                    await bookingService.addBooking(
+                    await widget.bookService.addBooking(
                       activityType: selectedActivity!,
-                      venueName: venueMap[selectedVenue]!,  // pakai ID venue
+                      venueId: selectedVenueId!,  // pakai ID venue
+                      venueName: selectedVenueName!,
                       date: _selectedDay,
                       studentId: "001202400087", // isi sesuai user login
                     );

@@ -1,7 +1,6 @@
 // lib/main.dart
 
 import 'package:flutter/material.dart';
-// Impor file dashboard_screen.dart yang berisi kelas DashboardScreen
 import 'pages/HomeWrapper.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
