@@ -15,7 +15,12 @@ final roomService = RoomService();
 final bookingService = BookingService();
 
 class RoomBookingPage extends StatefulWidget {
-  const RoomBookingPage({super.key});
+  final String userId;   // NIM / ID User
+  final String userName; // Nama User (Opsional, biar hemat fetch)
+  const RoomBookingPage({
+    super.key,
+    required this.userId,
+    required this.userName});
 
   @override
   State<RoomBookingPage> createState() => _RoomBookingPageState();
@@ -56,6 +61,7 @@ class _RoomBookingPageState extends State<RoomBookingPage> {
                     selectedDay: selectedDay,
                     onDaySelected: (day) => setState(() => selectedDay = day),
                     bookService: bookingService,
+                    userId: widget.userId,
                   );
                 } else {
                   return CategoryView(

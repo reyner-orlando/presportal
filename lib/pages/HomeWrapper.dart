@@ -3,7 +3,16 @@ import 'HomePage.dart';
 import 'RoomBookingPage.dart';
 
 class HomeWrapper extends StatefulWidget {
-  const HomeWrapper({super.key});
+  final String userRole;
+  final String userName;
+  final String userId;
+
+  const HomeWrapper({
+    super.key,
+    required this.userName,
+    required this.userId,
+    required this.userRole,
+  });
 
   @override
   _HomeWrapperState createState() => _HomeWrapperState();
@@ -11,12 +20,6 @@ class HomeWrapper extends StatefulWidget {
 
 class _HomeWrapperState extends State<HomeWrapper> {
   int _currentIndex = 0;
-
-  final _pages = [
-    HomePage(),
-    RoomBookingPage(),
-    const Scaffold(body: Center(child: Text("Halaman Profil"))),
-  ];
   Widget _buildCircleIcon(IconData icon, {required bool isSelected}) {
     return Container(
       padding: const EdgeInsets.all(8),
@@ -33,6 +36,18 @@ class _HomeWrapperState extends State<HomeWrapper> {
   }
   @override
   Widget build(BuildContext context) {
+    final List<Widget> _pages = [
+      HomePage(
+        userName: widget.userName,
+        userId: widget.userId,
+        userRole: widget.userRole,
+      ),
+      RoomBookingPage(
+        userId: widget.userId,     // Kirim ID Briant
+        userName: widget.userName, // Kirim Nama Briant
+      ),
+      const Scaffold(body: Center(child: Text("Halaman Profil"))),
+    ];
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,

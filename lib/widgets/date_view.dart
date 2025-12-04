@@ -9,13 +9,14 @@ class DateView extends StatefulWidget {
   final DateTime selectedDay;
   final BookingService bookService;
   final ValueChanged<DateTime> onDaySelected;
-
+  final String userId;
 
   const DateView({
     super.key,
     required this.selectedDay,
     required this.onDaySelected,
     required this.bookService,
+    required this.userId,
   });
 
   @override
@@ -198,7 +199,7 @@ class _DateViewState extends State<DateView> {
                       venueId: selectedVenueId!,  // pakai ID venue
                       venueName: selectedVenueName!,
                       date: _selectedDay,
-                      studentId: "001202400087", // isi sesuai user login
+                      studentId: widget.userId, // isi sesuai user login
                     );
 
                     ScaffoldMessenger.of(context).showSnackBar(

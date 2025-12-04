@@ -14,7 +14,7 @@ class BookingService {
     required String venueName,
   }) async {
     final docRef = _firestore.collection('bookings').doc();
-    final studentSnap = await _firestore.collection('students').doc(studentId).get();
+    final studentSnap = await _firestore.collection('users').doc(studentId).get();
     String fetchedStudentName = studentSnap.exists
         ? (studentSnap.data()?['name'] ?? 'Unknown Student')
         : 'Unknown ID' ;

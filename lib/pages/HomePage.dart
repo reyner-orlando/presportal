@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
 import 'RoomBookingPage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'HomeWrapper.dart';
 // Ganti dengan paket ikon yang Anda gunakan (misalnya: 'package:flutter_feather_icons/flutter_feather_icons.dart')
 // Untuk contoh ini, saya akan menggunakan ikon dari Material Icons.
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final String userName;
+  final String userId;
+  final String userRole;
+  const HomePage({
+    super.key,
+    required this.userName,
+    required this.userId,
+    required this.userRole,
+  });
   @override
   State<HomePage> createState() => _HomePageState();
 }
@@ -17,14 +26,19 @@ class _HomePageState extends State<HomePage> {
   String studentName = "-";
   String studentId = "001202400087"; // id kamu tetap
 
-  final List<Map<String, dynamic>> quickAccessItems = [
+  List<Map<String, dynamic>> get quickAccessItems => [
     {'title': 'Schedule', 'icon': Icons.calendar_today, 'color': Colors.blue},
     {'title': 'Grades', 'icon': Icons.emoji_events, 'color': Colors.orange},
     {
       'title': 'Book Room',
       'icon': Icons.door_front_door,
       'color': Colors.green,
-      'route': RoomBookingPage()
+
+      // SEKARANG INI AMAN DILAKUKAN:
+      'route': RoomBookingPage(
+          userId: widget.userId,
+          userName: widget.userName
+      )
     },
     {'title': 'Profile', 'icon': Icons.person, 'color': Colors.blue},
   ];
@@ -153,7 +167,7 @@ class _HomePageState extends State<HomePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Welcome, $studentName!',
+                    'Welcome, ${widget.userName}!',
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -161,7 +175,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   Text(
-                    'Student ID: $studentId',
+                    'Student ID: ${widget.userId}',
                     style: TextStyle(
                       fontSize: 14,
                       color: foregroundPrimaryColor.withOpacity(0.8),
