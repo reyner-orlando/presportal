@@ -103,42 +103,87 @@ class _DateViewState extends State<DateView> {
                 const SizedBox(height: 12),
 
                 // ------------ VENUE DROPDOWN ------------
-                StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance.collection('venues').orderBy('name').snapshots(),
+                StreamBuilder<List<Booking>>(
+                  stream: widget.bookService.getBookingsByDate(_selectedDay),
 
-                  builder: (context, snapshot) {
-                    if(!snapshot.hasData){
+                  builder: (context, bookingSnapshot) {
+                    if(!bookingSnapshot.hasData){
                       return const Center(child:CircularProgressIndicator());
                     }
 
-                    if(snapshot.data!.docs.isEmpty) {
-                      return const Text("No venues yet");
-                    }
+                    final bookedVenueIds = bookingSnapshot.data!
+                        .map((b) => b.venueId)
+                        .toSet();
 
-                    List<DropdownMenuItem<String>> venueItems = snapshot.data!.docs.map((doc) {
-                      Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+                    return StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance.collection('venues').orderBy('name').snapshots(),
+                      builder: (context, venueSnapshot) {
+                        if (!venueSnapshot.hasData) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
 
-                      return DropdownMenuItem<String>(
-                        value: doc.id,
-                        child: Text(data['name']),
-                      );
-                    }).toList();
+                        if (venueSnapshot.data!.docs.isEmpty) {
+                          return const Text("No venues available in database");
+                        }
 
-                    return DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(labelText: 'Choose venue/room'),
-                      value: selectedVenueId,
-                      items: venueItems,
-                      hint: const Text("Choose one"),
+                        // --- INI LOGIKA FILTERNYA ---
+                        // Kita filter docs: Hanya ambil venue yang ID-nya TIDAK ADA di bookedVenueIds
+                        final availableVenues = venueSnapshot.data!.docs.where((doc) {
+                          return !bookedVenueIds.contains(doc.id);
+                        }).toList();
 
-                      onChanged: (String? newId) {
-                        setState(() {
-                          selectedVenueId = newId;
+                        // Cek jika setelah difilter ternyata habis (semua ruangan penuh)
+                        if (availableVenues.isEmpty) {
+                          return Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                                color: Colors.red[50],
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.red[200]!)
+                            ),
+                            child: const Text("All venues are fully booked for this date!"),
+                          );
+                        }
 
-                          final selectedDoc = snapshot.data!.docs.firstWhere((doc) => doc.id == newId);
-                          selectedVenueName = selectedDoc['name'];
+                        // Mapping data venue yang tersisa ke DropdownMenuItem
+                        List<DropdownMenuItem<String>> venueItems = availableVenues.map((doc) {
+                          Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+                          return DropdownMenuItem<String>(
+                            value: doc.id,
+                            child: Text(data['name']), // Tampilkan nama, tapi value-nya ID
+                          );
+                        }).toList();
 
-                          print("User choose: $selectedVenueName (ID: $selectedVenueId)");
-                        });
+                        // ---------------------------------------------
+                        // VALIDASI NILAI TERPILIH (PENTING!)
+                        // Jika user ganti tanggal, dan venue yang tadinya dipilih ternyata penuh di tanggal baru,
+                        // kita harus reset selectedVenueId jadi null agar tidak error.
+                        if (selectedVenueId != null && !bookedVenueIds.contains(selectedVenueId)) {
+                          // Aman, venue yang dipilih masih available
+                        } else if (selectedVenueId != null && bookedVenueIds.contains(selectedVenueId)) {
+                          // Venue yang dipilih ternyata sudah dibooking orang lain/tanggal lain
+                          // Kita reset visualnya (walaupun setState idealnya tidak di dalam build,
+                          // untuk dropdown biasanya value akan otomatis null jika tidak ada di items,
+                          // tapi lebih aman kita handle logic UI-nya)
+                          selectedVenueId = null;
+                        }
+                        // ---------------------------------------------
+
+                        return DropdownButtonFormField<String>(
+                          decoration: const InputDecoration(labelText: 'Choose available venue'),
+                          value: selectedVenueId, // Pastikan value ini ada di list items
+                          items: venueItems,
+                          hint: const Text("Choose one"),
+                          onChanged: (String? newId) {
+                            setState(() {
+                              selectedVenueId = newId;
+
+                              // Cari nama venue berdasarkan ID yang dipilih dari list yang sudah difilter
+                              final selectedDoc = availableVenues.firstWhere((doc) => doc.id == newId);
+                              selectedVenueName = selectedDoc['name'];
+                            });
+                          },
+                        );
                       },
                     );
                   },

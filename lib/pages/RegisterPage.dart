@@ -69,6 +69,7 @@ class _RegisterScreenState extends State<RegisterPage> {
           backgroundColor: accentBlack,
         ),
       );
+      setState(() => _isLoading = false);
       return;
     }
 
@@ -80,6 +81,7 @@ class _RegisterScreenState extends State<RegisterPage> {
           backgroundColor: accentBlack,
         ),
       );
+      setState(() => _isLoading = false);
       return;
     }
 
@@ -114,6 +116,9 @@ class _RegisterScreenState extends State<RegisterPage> {
         'registration_date': FieldValue.serverTimestamp(),
         'status': 'active',
         'profile_image_url': 'https://picsum.photos/seed/default/200/200',
+        'gpa': 3.6,
+        'courses': 10,
+        'credits': 45,
       });
       if (!mounted) return;
       Navigator.pushReplacement(

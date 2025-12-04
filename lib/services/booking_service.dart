@@ -16,7 +16,7 @@ class BookingService {
     final docRef = _firestore.collection('bookings').doc();
     final studentSnap = await _firestore.collection('users').doc(studentId).get();
     String fetchedStudentName = studentSnap.exists
-        ? (studentSnap.data()?['name'] ?? 'Unknown Student')
+        ? (studentSnap.data()?['full_name'] ?? 'Unknown Student')
         : 'Unknown ID' ;
 
     final booking = Booking(

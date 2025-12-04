@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'RoomBookingPage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'HomeWrapper.dart';
+// import 'HomeWrapper.dart';
 // Ganti dengan paket ikon yang Anda gunakan (misalnya: 'package:flutter_feather_icons/flutter_feather_icons.dart')
 // Untuk contoh ini, saya akan menggunakan ikon dari Material Icons.
 
@@ -24,7 +24,8 @@ class _HomePageState extends State<HomePage> {
   String credits = "-";
   String courses = "-";
   String studentName = "-";
-  String studentId = "001202400087"; // id kamu tetap
+  String studentId = "-"; // id kamu tetap
+  String profileImageUrl = "https://picsum.photos/seed/default/200/200"; // Gambar default
 
   List<Map<String, dynamic>> get quickAccessItems => [
     {'title': 'Schedule', 'icon': Icons.calendar_today, 'color': Colors.blue},
@@ -34,7 +35,6 @@ class _HomePageState extends State<HomePage> {
       'icon': Icons.door_front_door,
       'color': Colors.green,
 
-      // SEKARANG INI AMAN DILAKUKAN:
       'route': RoomBookingPage(
           userId: widget.userId,
           userName: widget.userName
@@ -45,20 +45,20 @@ class _HomePageState extends State<HomePage> {
 
   final List<Map<String, dynamic>> todayClasses = const [
     {
-      'name': 'Data Structures',
-      'lecturer': 'Dr. Smith',
+      'name': 'Data Structures and Algorithm',
+      'lecturer': 'Nur Hadisukmana',
       'time': '09:00 AM',
-      'room': 'A-301'
+      'room': 'A216'
     },
     {
       'name': 'Database Systems',
-      'lecturer': 'Dr. Johnson',
+      'lecturer': 'Ronny Juwono',
       'time': '11:00 AM',
       'room': 'B-205'
     },
     {
       'name': 'Web Development',
-      'lecturer': 'Prof. Wilson',
+      'lecturer': 'William',
       'time': '02:00 PM',
       'room': 'C-104'
     },
@@ -83,20 +83,31 @@ class _HomePageState extends State<HomePage> {
   ];
 
   Future<void> fetchStudentData() async {
-    final doc = await FirebaseFirestore.instance
-        .collection('students')
-        .doc(studentId)
-        .get();
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userId)
+          .get();
 
-    if (doc.exists) {
-      setState(() {
-        studentName = doc['name'];
-        gpa = doc['gpa'].toString();
-        credits = doc['credits'].toString();
-        courses = doc['courses'].toString();
-      });
+      if (doc.exists && doc.data() != null) {
+        // Ambil data sebagai Map agar aman
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        setState(() {
+          gpa = (data['gpa'] ?? 0.0).toString();
+          credits = (data['credits'] ?? 0).toString();
+          courses = (data['courses'] ?? 0).toString();
+          if (data['profile_image_url'] != null && data['profile_image_url']
+              .toString()
+              .isNotEmpty) {
+            profileImageUrl = data['profile_image_url'];
+          }
+        });
+      }
+    }catch (e) {
+      print("Gagal mengambil data: $e");
     }
   }
+
 
   @override
   void initState() {
@@ -114,32 +125,37 @@ class _HomePageState extends State<HomePage> {
     const Color mutedColor = Color(0xFFf3f4f6); // Mirip dengan 'muted/50'
 
     return Scaffold(
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
+      body: RefreshIndicator(
+        onRefresh: fetchStudentData, // Panggil fungsi fetch saat ditarik
+        color: primaryColor, // Warna loading spinner
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            children: [
             // --- Header Bagian Atas ---
-            _buildHeader(primaryColor, foregroundPrimaryColor),
+              _buildHeader(primaryColor, foregroundPrimaryColor),
 
             // --- Bagian Utama Konten (Main) ---
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                   // --- Quick Access ---
-                  _buildQuickAccess(primaryColor, cardColor),
-                  const SizedBox(height: 24),
+                    _buildQuickAccess(primaryColor, cardColor),
+                    const SizedBox(height: 24),
 
                   // --- Today's Classes ---
-                  _buildTodayClasses(primaryColor, cardColor, mutedColor),
-                  const SizedBox(height: 24),
+                    _buildTodayClasses(primaryColor, cardColor, mutedColor),
+                    const SizedBox(height: 24),
 
                   // --- Announcements ---
-                  _buildAnnouncements(cardColor, mutedColor),
-                ],
+                    _buildAnnouncements(cardColor, mutedColor),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -159,40 +175,80 @@ class _HomePageState extends State<HomePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // --- BARIS UTAMA (PROFILE & NOTIF) ---
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween, // Kiri & Kanan mentok
+            crossAxisAlignment: CrossAxisAlignment.center, // Tengah secara vertikal
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Welcome, ${widget.userName}!',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: foregroundPrimaryColor,
+
+              // GROUP KIRI: FOTO + TEKS
+              Expanded( // Pakai Expanded biar kalau nama panjang gak nabrak icon
+                child: Row(
+                  children: [
+                    // 1. FOTO PROFIL (Sekarang di paling kiri)
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: CircleAvatar(
+                        radius: 24, // Ukuran agak diperbesar sedikit
+                        backgroundColor: Colors.grey.shade300,
+                        backgroundImage: NetworkImage(profileImageUrl),
+                        onBackgroundImageError: (exception, stackTrace) {
+                          // Error handling gambar
+                        },
+                      ),
                     ),
-                  ),
-                  Text(
-                    'Student ID: ${widget.userId}',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: foregroundPrimaryColor.withOpacity(0.8),
+
+                    const SizedBox(width: 12), // Jarak antara Foto dan Teks
+
+                    // 2. TEKS NAMA & ID
+                    Expanded( // Text bisa wrap kalau kepanjangan
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Welcome, ${widget.userName}!',
+                            style: TextStyle(
+                              fontSize: 20, // Sedikit disesuaikan biar pas sama foto
+                              fontWeight: FontWeight.bold,
+                              color: foregroundPrimaryColor,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis, // Titik-titik kalau kepanjangan
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Student ID: ${widget.userId}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: foregroundPrimaryColor.withOpacity(0.8),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+
+              // GROUP KANAN: ICON NOTIFIKASI
               IconButton(
-                icon: Icon(
-                    Icons.notifications_none, color: foregroundPrimaryColor,
-                    size: 24),
                 onPressed: () {},
+                icon: Icon(
+                    Icons.notifications_none,
+                    color: foregroundPrimaryColor,
+                    size: 28
+                ),
               ),
             ],
           ),
+
           const SizedBox(height: 24),
-          // Statistik (GPA, SKS, Mata Kuliah)
+
+          // --- STATISTIK (GPA, CREDITS, COURSES) ---
+          // Bagian ini tidak berubah
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -205,6 +261,7 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+
 
   // Widget untuk Kartu Statistik di Header
   Widget _buildStatCard(String value, String label, Color primaryColor) {

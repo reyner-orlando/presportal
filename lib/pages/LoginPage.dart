@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'HomeWrapper.dart'; // Import Dashboard
-// import 'RegisterPage.dart'; // Import Register
+import 'RegisterPage.dart'; // Import Register
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -327,14 +327,24 @@ class _LoginScreenState extends State<LoginPage> {
                       ),
 
                       // Contact Admin (New student)
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Text('New student? Contact admin@president.ac.id',
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('New student? ',
                               textAlign: TextAlign.center,
                               style: TextStyle(color: secondaryTextColor.withOpacity(0.7))),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const RegisterPage()),
+                              );
+                            },
+                            child: Text(
+                              'Register here!',
+                              style: TextStyle(color: primaryBlue, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
                         ),
-                      ),
                     ],
                   ),
                 ),
