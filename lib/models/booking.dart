@@ -10,6 +10,8 @@ class Booking {
   final String studentName;
   final String venueId;
   final String venueName;
+  final String timeId;
+  final String timeSlot;
 
 
   Booking({
@@ -22,6 +24,8 @@ class Booking {
     required this.studentName,
     required this.venueId,
     required this.venueName,
+    required this.timeId,
+    required this.timeSlot,
   });
 
   factory Booking.fromMap(String id, Map<String, dynamic> map) {
@@ -35,6 +39,8 @@ class Booking {
       studentName: map['username'],
       venueId: map['venueid'],
       venueName: map['venuename'],
+      timeId: map['timeid'],
+      timeSlot: map['timeslot'],
     );
   }
 
@@ -48,6 +54,8 @@ class Booking {
       'venueid': venueId,
       'username': studentName,
       'venuename': venueName,
+      'timeid': timeId,
+      'timeslot': timeSlot,
     };
   }
 }

@@ -10,6 +10,20 @@ class BookingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Color statusColor;
+    switch (booking.status) {
+      case 'Approved':
+        statusColor = Colors.green;
+        break;
+      case 'Rejected':
+      case 'Declined':
+        statusColor = Colors.red;
+        break;
+      case 'Pending':
+      default:
+        statusColor = Colors.orange;
+        break;
+    }
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 4,
@@ -31,23 +45,23 @@ class BookingCard extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-
-                Container(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.blueAccent.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    booking.status.toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.blueAccent,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            // Pakai statusColor dengan opacity untuk background (biar soft)
+            color: statusColor.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            booking.status.toUpperCase(),
+            style: TextStyle( // Hapus const karena warnanya dinamis
+              fontSize: 12,
+              // Pakai statusColor yang solid untuk teks
+              color: statusColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
               ],
             ),
 
@@ -125,7 +139,7 @@ class BookingCard extends StatelessWidget {
   /// Format tanggal menjadi lebih cantik
   String _formatDateTime(DateTime date) {
     final d = "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
-    final t = "${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
+    final t = booking.timeSlot;
     return "$d  ·  $t";
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'HomePage.dart';
 import 'RoomBookingPage.dart';
+import 'AdminPage.dart';
 
 class HomeWrapper extends StatefulWidget {
   final String userRole;
@@ -46,7 +47,7 @@ class _HomeWrapperState extends State<HomeWrapper> {
         userId: widget.userId,     // Kirim ID Briant
         userName: widget.userName, // Kirim Nama Briant
       ),
-      const Scaffold(body: Center(child: Text("Halaman Profil"))),
+      AdminPage(),
     ];
     return Scaffold(
       body: IndexedStack(

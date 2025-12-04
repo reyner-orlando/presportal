@@ -27,13 +27,19 @@ class _DateViewState extends State<DateView> {
   String? selectedVenueId;
   String? selectedActivity;
   String? selectedVenueName;
+  String? selectedSlotId;
+  String? selectedSlotTime;
   final bookingService = BookingService();
-  // Map<String, String> venueMap = {
-  //   "Lab A216": "0001",
-  //   "B204": "0002",
-  //   "Lab 402": "0003",
-  //   "Meeting Room": "0004",
-  // };
+  final List<Map<String, String>> timeSlot = [
+    {
+      'id': '1',
+      'time': '18:00 - 20:00',
+    },
+    {
+      'id': '2',
+      'time': '20:00 - 22:00',
+    },
+  ];
 
   // gunakan selectedDay dari parent
   late DateTime _selectedDay;
@@ -190,12 +196,13 @@ class _DateViewState extends State<DateView> {
                 ),
 
                 // ------------ ACTIVITY RADIO ------------
-                const Text("Activity Type"),
-                const SizedBox(height: 6),
+                const SizedBox(height: 20),
+                const Text("Activity Type", style: TextStyle(fontSize: 14)),
+
 
                 RadioListTile<String>(
-                  title: const Text("Presentation"),
-                  value: "Presentation",
+                  title: const Text("Event"),
+                  value: "Event",
                   groupValue: selectedActivity,
                   onChanged: (value) {
                     setState(() => selectedActivity = value);
@@ -218,13 +225,74 @@ class _DateViewState extends State<DateView> {
                   },
                 ),
 
-                const SizedBox(height: 12),
 
                 // ------------ REASON ------------
                 TextField(
-                  decoration: const InputDecoration(labelText: "Reason"),
+                  decoration: const InputDecoration(labelText: "Description"),
                 ),
+                const SizedBox(height: 20),
+                const Text("Choose Time Slot", style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 10),
 
+// Logic StreamBuilder untuk Cek Ketersediaan Slot
+                selectedVenueId == null
+                    ? const Text("Please select a venue first.", style: TextStyle(color: Colors.grey))
+                    : StreamBuilder<List<Booking>>(
+                  stream: widget.bookService.getBookingsByDate(_selectedDay),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const LinearProgressIndicator();
+                    }
+
+                    // Filter booking: Ambil booking HANYA untuk Venue yang dipilih saat ini
+                    final bookingsForVenue = snapshot.data!.where((b) => b.venueId == selectedVenueId).toList();
+
+                    // Kumpulkan ID slot yang SUDAH diambil orang
+                    final bookedSlotIds = bookingsForVenue.map((b) => b.timeId).toSet(); // Asumsi di model Booking ada field slotId
+
+                    return Wrap(
+                      spacing: 10.0, // Jarak antar tombol
+                      children: timeSlot.map((slot) {
+                        final isBooked = bookedSlotIds.contains(slot['id']);
+                        final isSelected = selectedSlotId == slot['id'];
+
+                        return ChoiceChip(
+                          label: Text(
+                            slot['time']!,
+                            style: TextStyle(
+                              color: isBooked
+                                  ? Colors.grey // Teks abu jika penuh
+                                  : (isSelected ? Colors.white : Colors.black),
+                            ),
+                          ),
+                          // Kalau selected, warna biru. Kalau penuh, warna abu muda. Kalau kosong, putih/abu tipis.
+                          selectedColor: Colors.blue,
+                          backgroundColor: isBooked ? Colors.grey[200] : Colors.grey[100],
+                          disabledColor: Colors.grey[300],
+
+                          selected: isSelected,
+
+                          // INI LOGIC KUNCINYA:
+                          // Jika isBooked = true, onSelected kita buat null (tombol mati/disable)
+                          onSelected: isBooked
+                              ? null
+                              : (bool selected) {
+                            setState(() {
+                              // Jika user klik tombol yang sama, batalkan pilihan (opsional)
+                              // atau set value baru
+                              selectedSlotId = selected ? slot['id'] : null;
+
+                              // Simpan juga string waktunya buat dikirim ke database
+                              if (selected) {
+                                selectedSlotTime = slot['time'];
+                              }
+                            });
+                          },
+                        );
+                      }).toList(),
+                    );
+                  },
+                ),
                 const SizedBox(height: 16),
 
                 // ------------ CONFIRM BUTTON ------------
@@ -245,6 +313,8 @@ class _DateViewState extends State<DateView> {
                       venueName: selectedVenueName!,
                       date: _selectedDay,
                       studentId: widget.userId, // isi sesuai user login
+                      timeId: selectedSlotId!,
+                      timeSlot: selectedSlotTime!,
                     );
 
                     ScaffoldMessenger.of(context).showSnackBar(

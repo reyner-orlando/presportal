@@ -12,6 +12,8 @@ class BookingService {
     required DateTime date,
     required String studentId,
     required String venueName,
+    required String timeId,
+    required String timeSlot,
   }) async {
     final docRef = _firestore.collection('bookings').doc();
     final studentSnap = await _firestore.collection('users').doc(studentId).get();
@@ -29,6 +31,8 @@ class BookingService {
       studentName: fetchedStudentName,
       venueId: venueId,
       venueName: venueName,
+      timeId: timeId,
+      timeSlot: timeSlot,
     );
 
     await docRef.set(booking.toMap());
