@@ -45,7 +45,8 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.3.10
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
@@ -55,7 +56,22 @@ dev_dependencies:
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/logo.png"      # Pastikan path ini sesuai lokasi gambarmu
+  min_sdk_android: 21
+  # TAMBAHAN UNTUK ANDROID MODERN:
+  adaptive_icon_background: "#FFFFFF"  # Bisa ganti hex code warna background (misal #FF0000)
+  adaptive_icon_foreground: "assets/logo.png" # Gambar logonya
+flutter_native_splash:
+  color: "#FFFFFF"                   # Warna background (bisa ganti hex code)
+  image: "assets/splash.png"         # Gambar logo tengah
 
+  # Khusus Android 12 ke atas (Wajib setting ini biar ga error di HP baru)
+  android_12:
+    image: "assets/splash.png"
+    color: "#FFFFFF"
 # The following section is specific to Flutter packages.
 flutter:
 
@@ -63,6 +79,10 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+  assets:
+    - assets/logo.png
+    - assets/splash.png
+
 
   # To add assets to your application, add an assets section, like this:
   # assets:

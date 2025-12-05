@@ -80,7 +80,9 @@ class _DateViewState extends State<DateView> {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              final bookings = snapshot.data!;
+              final allBookings = snapshot.data!;
+              // [MODIFIKASI] Filter: Buang yang statusnya Rejected
+              final bookings = allBookings.where((b) => b.status != 'Rejected').toList();
 
               if (bookings.isEmpty) {
                 return const Padding(
@@ -118,6 +120,7 @@ class _DateViewState extends State<DateView> {
                     }
 
                     final bookedVenueIds = bookingSnapshot.data!
+                        .where((b) => b.status != 'Rejected')
                         .map((b) => b.venueId)
                         .toSet();
 
@@ -244,8 +247,10 @@ class _DateViewState extends State<DateView> {
                       return const LinearProgressIndicator();
                     }
 
-                    // Filter booking: Ambil booking HANYA untuk Venue yang dipilih saat ini
-                    final bookingsForVenue = snapshot.data!.where((b) => b.venueId == selectedVenueId).toList();
+                    // Filter Venue DAN Filter status bukan Rejected
+                    final bookingsForVenue = snapshot.data!
+                        .where((b) => b.venueId == selectedVenueId && b.status != 'Rejected')
+                        .toList();
 
                     // Kumpulkan ID slot yang SUDAH diambil orang
                     final bookedSlotIds = bookingsForVenue.map((b) => b.timeId).toSet(); // Asumsi di model Booking ada field slotId

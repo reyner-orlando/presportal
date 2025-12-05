@@ -6,7 +6,9 @@ class Venue {
   final String location;
   final String category;
   final int capacity;
+  final bool isAvailable;
   final List<String> facilities;
+
 
   Venue({
     required this.id,
@@ -15,6 +17,7 @@ class Venue {
     required this.category,
     required this.capacity,
     required this.facilities,
+    required this.isAvailable,
   });
 
   // Factory untuk convert dari Firestore Document ke Object Venue
@@ -36,6 +39,8 @@ class Venue {
       category: data['category'] ?? 'General',
       capacity: data['capacity'] ?? 0,
       facilities: parsedFacilities,
+      isAvailable: data['isAvailable'] ?? false,
+
     );
   }
 }

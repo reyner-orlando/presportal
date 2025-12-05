@@ -17,8 +17,8 @@
 
     <application
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher"
-        android:label="projectwmp">
+        android:icon="@mipmap/launcher_icon"
+        android:label="PresPortal">
         <activity
             android:name=".SecondActivity"
             android:exported="false" />

@@ -1,11 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+import '../models/venue.dart'; // Pastikan import file model Venue kamu
 class VenueService {
   final CollectionReference _venuesRef = FirebaseFirestore.instance.collection('venues');
 
   // Stream untuk list venue
-  Stream<QuerySnapshot> getVenues() {
-    return _venuesRef.orderBy('name').snapshots();
+  Stream<List<Venue>> getVenues() {
+    return _venuesRef.snapshots().map((querySnapshot) {
+      // 1. Ambil list dokumen (querySnapshot.docs)
+      // 2. Lakukan looping (.map)
+      // 3. Ubah setiap dokumen menjadi object Venue menggunakan factory kamu
+      return querySnapshot.docs.map((doc) {
+        return Venue.fromFirestore(doc); // <--- INI KUNCINYA
+      }).toList();
+    });
   }
 
   // Add Venue dengan Custom ID

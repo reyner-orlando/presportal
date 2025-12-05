@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
-import '../models/room.dart';
+import '../models/venue.dart';
 import 'facility_tag.dart';
 
 const Color primaryColor = Color(0xFF1e40af);
 const Color secondaryColor = Color(0xFF8b5cf6);
 const Color cardColor = Colors.white;
 
-class RoomCard extends StatelessWidget {
-  final Room room;
+class VenueCard extends StatelessWidget {
+  final Venue venue;
   final VoidCallback? onBooking;
 
-  const RoomCard({super.key, required this.room, this.onBooking});
+  const VenueCard({super.key, required this.venue, this.onBooking});
 
   @override
   Widget build(BuildContext context) {
-    double opacity = room.isAvailable ? 1.0 : 0.6;
+    double opacity = venue.isAvailable ? 1.0 : 0.6;
 
     return Opacity(
       opacity: opacity,
@@ -44,7 +44,7 @@ class RoomCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(room.name,
+                        Text(venue.name,
                             style: const TextStyle(
                                 fontSize: 18, fontWeight: FontWeight.w600)),
                         const SizedBox(height: 4),
@@ -52,7 +52,7 @@ class RoomCard extends StatelessWidget {
                           children: [
                             Icon(Icons.location_on, size: 12, color: Colors.grey.shade600),
                             const SizedBox(width: 4),
-                            Text(room.location,
+                            Text(venue.location,
                                 style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                           ],
                         ),
@@ -76,7 +76,7 @@ class RoomCard extends StatelessWidget {
                     children: [
                       Icon(Icons.people, size: 16, color: Colors.grey.shade600),
                       const SizedBox(width: 8),
-                      Text('Capacity: ${room.capacity} people',
+                      Text('Capacity: ${venue.capacity} people',
                           style: TextStyle(fontSize: 14, color: Colors.grey.shade700)),
                     ],
                   ),
@@ -84,7 +84,7 @@ class RoomCard extends StatelessWidget {
                   Wrap(
                     spacing: 8.0,
                     runSpacing: 8.0,
-                    children: room.facilities.map((f) => FacilityTag(text: f)).toList(),
+                    children: venue.facilities.map((f) => FacilityTag(text: f)).toList(),
                   ),
                   const SizedBox(height: 16),
                 ],

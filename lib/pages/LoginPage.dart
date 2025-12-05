@@ -18,7 +18,7 @@ class _LoginScreenState extends State<LoginPage> {
 
   // State baru untuk toggle visibilitas password
   bool _isPasswordVisible = false;
-
+  bool _isLoading = false;
   // --- DEFINISI WARNA BERDASARKAN HEX CODE ---
   final Color primaryBlue = const Color(0xFF005696); // Deep Blue
   final Color lightBackgroundColor = const Color(0xFFF0F2F5); // Very light grey for background
@@ -46,6 +46,9 @@ class _LoginScreenState extends State<LoginPage> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Email atau Password wajib diisi!')));
       return;
     }
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
       String finalEmail;
@@ -83,7 +86,7 @@ class _LoginScreenState extends State<LoginPage> {
         finalEmail = userDoc['email'];
       }
 
-      if (userDoc == null || !userDoc.exists) {
+      if (!userDoc.exists) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Gagal mendapatkan data pengguna.')));
         return;
       }
@@ -94,6 +97,9 @@ class _LoginScreenState extends State<LoginPage> {
       // 3. AMBIL DATA PROFIL LENGKAP
       final userData = userDoc.data() as Map<String, dynamic>;
       final userRole = userData['role'] ?? 'Student';
+
+      // Pastikan widget masih mounted sebelum navigasi
+      if (!mounted) return;
 
       // 4. Navigasi ke Dashboard (Meneruskan data lengkap)
       Navigator.pushReplacement(
@@ -123,6 +129,14 @@ class _LoginScreenState extends State<LoginPage> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error Database: ${e.message}. Cek aturan Firestore.')));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Terjadi kesalahan tak terduga.')));
+    } finally {
+      // [MODIFIKASI 3] Matikan loading apa pun yang terjadi (Sukses/Gagal)
+      // Cek mounted agar tidak error jika user sudah pindah halaman
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -286,31 +300,40 @@ class _LoginScreenState extends State<LoginPage> {
                       const SizedBox(height: 30),
 
                       // Tombol Sign In
+                      // [MODIFIKASI 4] Tombol Sign In dengan Logika Loading
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: _verifyLogin,
+                          // Jika loading, disable tombol (onPressed: null) agar tidak bisa dipencet 2x
+                          onPressed: _isLoading ? null : _verifyLogin,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: primaryBlue,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             elevation: 5,
-                            // FIX: Mengganti overlayColor dengan splashFactory atau menggunakan
-                            // MaterialStateProperty.resolveWith yang diketik dengan benar di dalam styleFrom
-                            // Jika error tetap muncul, berarti SDK yang digunakan terlalu lama.
-                            // Kita ganti menjadi menggunakan style property eksplisit untuk compatibility.
+                            disabledBackgroundColor: primaryBlue.withOpacity(0.6), // Warna saat loading
                           ).copyWith(
                             overlayColor: MaterialStateProperty.resolveWith<Color?>(
                                   (Set<MaterialState> states) {
                                 if (states.contains(MaterialState.pressed)) {
-                                  return pressedButtonColor; // Abu-abu tua saat ditekan
+                                  return pressedButtonColor;
                                 }
-                                return null; // Default value (biarkan theme yang menangani)
+                                return null;
                               },
                             ),
                           ),
-                          child: const Text('Sign In', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          // Jika loading, tampilkan spinner putih kecil. Jika tidak, tampilkan teks Sign In.
+                          child: _isLoading
+                              ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2.5,
+                            ),
+                          )
+                              : const Text('Sign In', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                         ),
                       ),
                       const SizedBox(height: 15),

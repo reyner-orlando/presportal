@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../services/room_service.dart';
+import '../services/venue_service.dart';
 import '../widgets/date_view.dart';
 import '../widgets/category_view.dart';
-import '../widgets/room_card.dart';
-import '../models/room.dart';
+import '../widgets/venue_card.dart';
+import '../models/venue.dart';
 import '../services/booking_service.dart';
 
 const Color accentColor = Color(0xFFfb8c00);
@@ -11,7 +11,7 @@ const Color secondaryColor = Color(0xFF8b5cf6);
 const Color foregroundAccentColor = Colors.white;
 
 final categories = ["Classroom", "Laboratory", "Auditorium", "Venue"];
-final roomService = RoomService();
+final roomService = VenueService();
 final bookingService = BookingService();
 
 class RoomBookingPage extends StatefulWidget {
@@ -30,6 +30,8 @@ class _RoomBookingPageState extends State<RoomBookingPage> {
   int selectedTabIndex = 0;
   DateTime selectedDay = DateTime.now();
   String selectedCategory = "Classroom";
+  String _currentCategory = 'Classroom';
+  final List<String> _categories = ['Classroom', 'Laboratory', 'Meeting Room'];
 
   @override
   Widget build(BuildContext context) {
@@ -41,21 +43,7 @@ class _RoomBookingPageState extends State<RoomBookingPage> {
             child: Builder(
               builder: (_) {
                 if (selectedTabIndex == 0) {
-                  return StreamBuilder<List<Room>>(
-                    stream: roomService.getRooms(),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-                      final rooms = snapshot.data!;
-                      return ListView(
-                        padding: const EdgeInsets.all(16),
-                        children: rooms.map((r) => RoomCard(
-                          room: r,
-                          onBooking: () => ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Booking ${r.name} ...'))),
-                        )).toList(),
-                      );
-                    },
-                  );
+                  return Text('Rey');
                 } else if (selectedTabIndex == 1) {
                   return DateView(
                     selectedDay: selectedDay,
@@ -65,11 +53,16 @@ class _RoomBookingPageState extends State<RoomBookingPage> {
                   );
                 } else {
                   return CategoryView(
-                    selectedCategory: selectedCategory,
-                    onCategoryChanged: (cat) => setState(() => selectedCategory = cat),
-                    roomService: roomService,
-                    categories: categories,
-                  );
+                    selectedCategory: _currentCategory,
+                    categories: _categories,
+                    venueService: VenueService(),
+
+                    // PENTING: Harus ada setState di sini!
+                    onCategoryChanged: (newValue) {
+                      setState(() {
+                        _currentCategory = newValue;
+                      });
+                    });
                 }
               },
             ),
@@ -96,11 +89,11 @@ class _RoomBookingPageState extends State<RoomBookingPage> {
           const SizedBox(height: 16),
           Row(
             children: [
-              _buildTabButton('List', 0),
+              _buildTabButton('Your Bookings', 0),
               const SizedBox(width: 8),
               _buildTabButton('By Date', 1),
               const SizedBox(width: 8),
-              _buildTabButton('Category', 2),
+              _buildTabButton('Room List', 2),
             ],
           ),
         ],
