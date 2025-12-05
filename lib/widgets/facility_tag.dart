@@ -16,6 +16,8 @@ class FacilityTag extends StatelessWidget {
     else if (text.contains('AC')) icon = Icons.ac_unit;
     else if (text.contains('Whiteboard')) icon = Icons.gesture;
     else if (text.contains('Power Outlets')) icon = Icons.power;
+    else if (text.contains('LAN Cable')) icon = Icons.lan;
+    else if (text.contains('Computer')) icon = Icons.computer;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

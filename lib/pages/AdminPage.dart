@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../services/venue_service.dart';
+import '../models/venue.dart';
+import '../widgets/admin/add_venue_dialog.dart';
 
 class AdminPage extends StatelessWidget {
   const AdminPage({super.key});
@@ -160,16 +163,41 @@ class _VenueManagementTab extends StatefulWidget {
 }
 
 class _VenueManagementTabState extends State<_VenueManagementTab> {
+  final VenueService _venueService = VenueService();
   final List<String> categories = ['Classroom', 'Laboratory', 'Auditorium', 'Meeting Room'];
-  String? selectedCategory;
 
-  void _showAddVenueDialog(BuildContext context) {
-    final TextEditingController nameController = TextEditingController();
-    final TextEditingController locationController = TextEditingController();
-    final TextEditingController capacityController = TextEditingController();
-    final TextEditingController facilitiesController = TextEditingController();
+  // --- 1. LOGIKA DELETE ---
+  void _deleteVenue(String id) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Delete Venue?"),
+        content: const Text("This action cannot be undone."),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+          TextButton(
+            onPressed: () {
+              _venueService.deleteVenue(id);
+              Navigator.pop(ctx);
+            },
+            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+          )
+        ],
+      ),
+    );
+  }
 
-    selectedCategory = null;
+  // --- 2. LOGIKA EDIT (DIALOG) ---
+  void _showEditVenueDialog(BuildContext context, Venue venue) {
+    // Isi controller dengan data LAMA (Pre-fill)
+    final nameController = TextEditingController(text: venue.name);
+    final locationController = TextEditingController(text: venue.location);
+    final capacityController = TextEditingController(text: venue.capacity.toString());
+
+    // Gabungkan list fasilitas jadi string koma untuk ditampilkan
+    final facilitiesController = TextEditingController(text: venue.facilities.join(', '));
+
+    String? selectedCategory = venue.category;
 
     showDialog(
       context: context,
@@ -177,27 +205,19 @@ class _VenueManagementTabState extends State<_VenueManagementTab> {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return AlertDialog(
-              title: const Text("Add New Venue"),
+              title: Text("Edit Venue: ${venue.name}"),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     TextField(
                       controller: nameController,
-                      decoration: const InputDecoration(
-                        labelText: "Venue Name",
-                        hintText: "E.g. Lab Programming A",
-                        prefixIcon: Icon(Icons.meeting_room),
-                      ),
+                      decoration: const InputDecoration(labelText: "Name", prefixIcon: Icon(Icons.meeting_room)),
                     ),
                     const SizedBox(height: 10),
                     TextField(
                       controller: locationController,
-                      decoration: const InputDecoration(
-                        labelText: "Location/Building",
-                        hintText: "E.g. Building B, 2nd Floor",
-                        prefixIcon: Icon(Icons.location_on),
-                      ),
+                      decoration: const InputDecoration(labelText: "Location", prefixIcon: Icon(Icons.location_on)),
                     ),
                     const SizedBox(height: 10),
                     Row(
@@ -205,17 +225,10 @@ class _VenueManagementTabState extends State<_VenueManagementTab> {
                         Expanded(
                           flex: 2,
                           child: DropdownButtonFormField<String>(
-                            decoration: const InputDecoration(
-                              labelText: "Category",
-                              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 15),
-                            ),
-                            value: selectedCategory,
-                            items: categories.map((cat) {
-                              return DropdownMenuItem(value: cat, child: Text(cat, style: const TextStyle(fontSize: 14)));
-                            }).toList(),
-                            onChanged: (val) {
-                              setStateDialog(() => selectedCategory = val);
-                            },
+                            decoration: const InputDecoration(labelText: "Category", contentPadding: EdgeInsets.symmetric(horizontal: 10)),
+                            value: categories.contains(selectedCategory) ? selectedCategory : null,
+                            items: categories.map((c) => DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontSize: 13)))).toList(),
+                            onChanged: (val) => setStateDialog(() => selectedCategory = val),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -224,11 +237,7 @@ class _VenueManagementTabState extends State<_VenueManagementTab> {
                           child: TextField(
                             controller: capacityController,
                             keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              labelText: "Cap.",
-                              hintText: "40",
-                              prefixIcon: Icon(Icons.people),
-                            ),
+                            decoration: const InputDecoration(labelText: "Cap."),
                           ),
                         ),
                       ],
@@ -238,9 +247,8 @@ class _VenueManagementTabState extends State<_VenueManagementTab> {
                       controller: facilitiesController,
                       maxLines: 2,
                       decoration: const InputDecoration(
-                        labelText: "Facilities (Separate by comma)", // Update hint
-                        hintText: "AC, Projector, WiFi",
-                        helperText: "Pisahkan dengan koma",
+                        labelText: "Facilities",
+                        helperText: "Separate by comma",
                         prefixIcon: Icon(Icons.settings_input_component),
                       ),
                     ),
@@ -251,34 +259,29 @@ class _VenueManagementTabState extends State<_VenueManagementTab> {
                 TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
                 ElevatedButton(
                   onPressed: () {
-                    if (nameController.text.isNotEmpty &&
-                        selectedCategory != null &&
-                        capacityController.text.isNotEmpty) {
-
-                      // 1. UBAH TEXT JADI LIST AGAR TERSIMPAN SEBAGAI ARRAY
+                    if (nameController.text.isNotEmpty && selectedCategory != null) {
+                      // Logic Split String ke List
                       List<String> facilitiesList = facilitiesController.text
                           .split(',')
                           .map((e) => e.trim())
                           .where((e) => e.isNotEmpty)
                           .toList();
 
-                      FirebaseFirestore.instance.collection('venues').add({
-                        'name': nameController.text.trim(),
-                        'location': locationController.text.trim(),
-                        'category': selectedCategory,
-                        'capacity': int.tryParse(capacityController.text) ?? 0,
-                        'facilities': facilitiesList, // Simpan List
-                        'createdAt': FieldValue.serverTimestamp(),
-                      });
+                      // Panggil Service Update
+                      _venueService.updateVenue(
+                        id: venue.id,
+                        name: nameController.text.trim(),
+                        location: locationController.text.trim(),
+                        category: selectedCategory!,
+                        capacity: int.tryParse(capacityController.text) ?? 0,
+                        facilities: facilitiesList,
+                      );
 
                       Navigator.pop(ctx);
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Please fill Name, Category, and Capacity"))
-                      );
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Venue updated successfully")));
                     }
                   },
-                  child: const Text("Save"),
+                  child: const Text("Update"),
                 ),
               ],
             );
@@ -288,15 +291,19 @@ class _VenueManagementTabState extends State<_VenueManagementTab> {
     );
   }
 
-  void _deleteVenue(String id) {
-    FirebaseFirestore.instance.collection('venues').doc(id).delete();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddVenueDialog(context),
+        onPressed: () {
+          // Solusi Error AddVenueDialog context: Gunakan showDialog
+          showDialog(
+            context: context,
+            builder: (context) {
+              return const AddVenueDialog();
+            },
+          );
+        },
         icon: const Icon(Icons.add),
         label: const Text("Add Venue"),
       ),
@@ -306,32 +313,20 @@ class _VenueManagementTabState extends State<_VenueManagementTab> {
           if (snapshot.hasError) return Center(child: Text("Error: ${snapshot.error}"));
           if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
 
-          final venues = snapshot.data!.docs;
+          final docs = snapshot.data!.docs;
 
-          if (venues.isEmpty) {
+          if (docs.isEmpty) {
             return const Center(child: Text("No venues yet. Click + to add."));
           }
 
           return ListView.builder(
             padding: const EdgeInsets.only(bottom: 80),
-            itemCount: venues.length,
+            itemCount: docs.length,
             itemBuilder: (context, index) {
-              final doc = venues[index];
-              final data = doc.data() as Map<String, dynamic>;
+              final doc = docs[index];
 
-              final name = data['name'] ?? 'No Name';
-              final location = data['location'] ?? '-';
-              final category = data['category'] ?? 'General';
-              final capacity = data['capacity']?.toString() ?? '0';
-              final id = doc.id;
-
-              // 2. LOGIC AMBIL DATA AGAR AMAN (List atau String)
-              List<dynamic> facilitiesList = [];
-              if (data['facilities'] is List) {
-                facilitiesList = data['facilities'];
-              } else if (data['facilities'] is String) {
-                facilitiesList = [data['facilities']];
-              }
+              // [PENTING] Convert Doc ke Object Venue agar bisa dikirim ke Edit Dialog
+              final venue = Venue.fromFirestore(doc);
 
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -344,68 +339,80 @@ class _VenueManagementTabState extends State<_VenueManagementTab> {
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  name,
+                                  venue.name,
                                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blueAccent),
                                 ),
                                 Text(
-                                  "$category • $location",
+                                  "${venue.category} • ${venue.location}",
                                   style: TextStyle(color: Colors.grey[600], fontSize: 13),
                                 ),
                               ],
                             ),
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.redAccent),
-                            onPressed: () {
-                              showDialog(
-                                context: context,
-                                builder: (ctx) => AlertDialog(
-                                  title: const Text("Delete Venue?"),
-                                  content: const Text("This action cannot be undone."),
-                                  actions: [
-                                    TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
-                                    TextButton(
-                                      onPressed: () {
-                                        _deleteVenue(id);
-                                        Navigator.pop(ctx);
-                                      },
-                                      child: const Text("Delete", style: TextStyle(color: Colors.red)),
+                          // [BARU] Tombol Edit dan Delete
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit, color: Colors.orange),
+                                onPressed: () => _showEditVenueDialog(context, venue),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.redAccent),
+                                onPressed: () {
+                                  // Konfirmasi hapus
+                                  showDialog(
+                                    context: context,
+                                    builder: (ctx) => AlertDialog(
+                                      title: const Text("Delete Venue?"),
+                                      content: const Text("This action cannot be undone."),
+                                      actions: [
+                                        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+                                        TextButton(
+                                          onPressed: () {
+                                            _deleteVenue(venue.id);
+                                            Navigator.pop(ctx);
+                                          },
+                                          child: const Text("Delete", style: TextStyle(color: Colors.red)),
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
-                              );
-                            },
+                                  );
+                                },
+                              ),
+                            ],
                           ),
                         ],
                       ),
                       const Divider(),
                       Row(
                         children: [
-                          _buildInfoChip(Icons.groups, "$capacity Seats"),
+                          _buildInfoChip(Icons.groups, "${venue.capacity} Seats"),
                           const SizedBox(width: 12),
-                          _buildInfoChip(Icons.fingerprint, "ID: ...${id.length > 4 ? id.substring(id.length - 4) : id}"),
+                          _buildInfoChip(Icons.fingerprint, "ID: ${venue.id}"),
                         ],
                       ),
                       const SizedBox(height: 12),
 
-                      // 3. TAMPILKAN FACILITIES PAKAI WRAP & CHIP
+                      // Tampilkan Facilities
                       const Text("Facilities:", style: TextStyle(fontSize: 12, color: Colors.grey)),
                       const SizedBox(height: 4),
 
-                      facilitiesList.isEmpty
+                      venue.facilities.isEmpty
                           ? const Text("-", style: TextStyle(color: Colors.grey))
                           : Wrap(
                         spacing: 6.0,
                         runSpacing: 0.0,
-                        children: facilitiesList.map((facility) {
+                        children: venue.facilities.map((facility) {
                           return Chip(
-                            label: Text(facility.toString(), style: const TextStyle(fontSize: 11)),
+                            label: Text(facility, style: const TextStyle(fontSize: 11)),
                             backgroundColor: Colors.blue[50],
                             padding: EdgeInsets.zero,
                             visualDensity: VisualDensity.compact,

@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import '../services/venue_service.dart';
 import '../widgets/date_view.dart';
 import '../widgets/category_view.dart';
-import '../widgets/venue_card.dart';
-import '../models/venue.dart';
 import '../services/booking_service.dart';
+import '../widgets/user_bookings_history.dart';
 
 const Color accentColor = Color(0xFFfb8c00);
 const Color secondaryColor = Color(0xFF8b5cf6);
@@ -43,7 +42,9 @@ class _RoomBookingPageState extends State<RoomBookingPage> {
             child: Builder(
               builder: (_) {
                 if (selectedTabIndex == 0) {
-                  return Text('Rey');
+                  return UserBookingHistory(
+                    userId: widget.userId,
+                  );
                 } else if (selectedTabIndex == 1) {
                   return DateView(
                     selectedDay: selectedDay,

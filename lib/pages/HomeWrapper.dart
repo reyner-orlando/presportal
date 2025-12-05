@@ -2,6 +2,14 @@ import 'package:flutter/material.dart';
 import 'HomePage.dart';
 import 'RoomBookingPage.dart';
 import 'AdminPage.dart';
+// [OPSIONAL] Buat file ProfilePage.dart terpisah, atau pakai placeholder di bawah
+class ProfilePage extends StatelessWidget {
+  const ProfilePage({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(body: Center(child: Text("Profile Page")));
+  }
+}
 
 class HomeWrapper extends StatefulWidget {
   final String userRole;
@@ -21,6 +29,9 @@ class HomeWrapper extends StatefulWidget {
 
 class _HomeWrapperState extends State<HomeWrapper> {
   int _currentIndex = 0;
+
+  bool get _isAdmin => widget.userRole == 'Admin';
+
   Widget _buildCircleIcon(IconData icon, {required bool isSelected}) {
     return Container(
       padding: const EdgeInsets.all(8),
@@ -37,7 +48,7 @@ class _HomeWrapperState extends State<HomeWrapper> {
   }
   @override
   Widget build(BuildContext context) {
-    final List<Widget> _pages = [
+    final List<Widget> pages = [
       HomePage(
         userName: widget.userName,
         userId: widget.userId,
@@ -47,12 +58,47 @@ class _HomeWrapperState extends State<HomeWrapper> {
         userId: widget.userId,     // Kirim ID Briant
         userName: widget.userName, // Kirim Nama Briant
       ),
-      AdminPage(),
     ];
+    if (_isAdmin) {
+      pages.add(const AdminPage());
+    }
+
+    pages.add(const ProfilePage());
+
+    List<BottomNavigationBarItem> navItems = [
+      BottomNavigationBarItem(
+        icon: _buildCircleIcon(Icons.home, isSelected: _currentIndex == 0),
+        label: "Home",
+      ),
+      BottomNavigationBarItem(
+        icon: _buildCircleIcon(Icons.meeting_room, isSelected: _currentIndex == 1),
+        label: "Rooms",
+      ),
+    ];
+
+    if (_isAdmin) {
+      navItems.add(
+        BottomNavigationBarItem(
+          icon: _buildCircleIcon(Icons.admin_panel_settings, isSelected: _currentIndex == 2),
+          label: "Admin",
+        ),
+      );
+    }
+
+    int profileIndex = _isAdmin ? 3 : 2;
+    navItems.add(
+      BottomNavigationBarItem(
+        icon: _buildCircleIcon(Icons.person, isSelected: _currentIndex == profileIndex),
+        label: "Profile",
+      ),
+    );
+
+
+
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
-        children: _pages,
+        children: pages,
       ),
 
       bottomNavigationBar: BottomNavigationBar(
@@ -60,39 +106,16 @@ class _HomeWrapperState extends State<HomeWrapper> {
         onTap: (index) {
           setState(() => _currentIndex = index);
         },
-
-        // Tambahan penting
-        selectedIconTheme: IconThemeData(size: 28),
-        unselectedIconTheme: IconThemeData(size: 24),
-
-        // Ripple hanya di icon
+        type: BottomNavigationBarType.fixed, // Penting agar label tidak geser jika > 3 item
+        selectedIconTheme: const IconThemeData(size: 28),
+        unselectedIconTheme: const IconThemeData(size: 24), // Ukuran diperbaiki agar tidak terlalu kecil (10 kekecilan)
+        showUnselectedLabels: true,
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
         enableFeedback: true,
-
-        items: [
-          BottomNavigationBarItem(
-            icon: _buildCircleIcon(
-              Icons.home,
-              isSelected: _currentIndex == 0,
-            ),
-            label: "Home",
-          ),
-          BottomNavigationBarItem(
-            icon: _buildCircleIcon(
-              Icons.meeting_room,
-              isSelected: _currentIndex == 1,
-            ),
-            label: "Rooms",
-          ),
-          BottomNavigationBarItem(
-            icon: _buildCircleIcon(
-              Icons.person,
-              isSelected: _currentIndex == 2,
-            ),
-            label: "Profile",
-          ),
-        ],
+        items: navItems, // Gunakan list dinamis yang kita buat di atas
+        // Tambahan penting
       ),
-
     );
   }
 }

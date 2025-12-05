@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'RoomBookingPage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Tambahkan ini
+import 'LoginPage.dart'; // Tambahkan ini agar bisa kembali ke Login
 // import 'HomeWrapper.dart';
 // Ganti dengan paket ikon yang Anda gunakan (misalnya: 'package:flutter_feather_icons/flutter_feather_icons.dart')
 // Untuk contoh ini, saya akan menggunakan ikon dari Material Icons.
@@ -82,6 +84,47 @@ class _HomePageState extends State<HomePage> {
     },
   ];
 
+  // Fungsi untuk menangani Logout
+  Future<void> _handleLogout() async {
+    // Tampilkan Dialog Konfirmasi
+    bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Logout"),
+        content: const Text("Are you sure you want to log out?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Logout", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await FirebaseAuth.instance.signOut();
+
+        // Cek apakah widget masih mounted sebelum navigasi
+        if (!mounted) return;
+
+        // Navigasi kembali ke Login Page dan hapus history route sebelumnya
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+              (Route<dynamic> route) => false,
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error logging out: $e")),
+        );
+      }
+    }
+  }
+
   Future<void> fetchStudentData() async {
     try {
       final doc = await FirebaseFirestore.instance
@@ -107,7 +150,6 @@ class _HomePageState extends State<HomePage> {
       print("Gagal mengambil data: $e");
     }
   }
-
 
   @override
   void initState() {
@@ -162,6 +204,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   // Widget untuk Header (Header Berwarna Gradien)
+  // Widget untuk Header (Header Berwarna Gradien)
   Widget _buildHeader(Color primaryColor, Color foregroundPrimaryColor) {
     return Container(
       decoration: BoxDecoration(
@@ -175,48 +218,43 @@ class _HomePageState extends State<HomePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // --- BARIS UTAMA (PROFILE & NOTIF) ---
+          // --- BARIS UTAMA (PROFILE & ACTION BUTTONS) ---
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween, // Kiri & Kanan mentok
-            crossAxisAlignment: CrossAxisAlignment.center, // Tengah secara vertikal
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-
               // GROUP KIRI: FOTO + TEKS
-              Expanded( // Pakai Expanded biar kalau nama panjang gak nabrak icon
+              Expanded(
                 child: Row(
                   children: [
-                    // 1. FOTO PROFIL (Sekarang di paling kiri)
+                    // 1. FOTO PROFIL
                     Container(
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white, width: 2),
                       ),
                       child: CircleAvatar(
-                        radius: 24, // Ukuran agak diperbesar sedikit
+                        radius: 24,
                         backgroundColor: Colors.grey.shade300,
                         backgroundImage: NetworkImage(profileImageUrl),
-                        onBackgroundImageError: (exception, stackTrace) {
-                          // Error handling gambar
-                        },
+                        onBackgroundImageError: (exception, stackTrace) {},
                       ),
                     ),
-
-                    const SizedBox(width: 12), // Jarak antara Foto dan Teks
-
+                    const SizedBox(width: 12),
                     // 2. TEKS NAMA & ID
-                    Expanded( // Text bisa wrap kalau kepanjangan
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Welcome, ${widget.userName}!',
+                            '${widget.userName}',
                             style: TextStyle(
-                              fontSize: 20, // Sedikit disesuaikan biar pas sama foto
+                              fontSize: 20,
                               fontWeight: FontWeight.bold,
                               color: foregroundPrimaryColor,
                             ),
                             maxLines: 1,
-                            overflow: TextOverflow.ellipsis, // Titik-titik kalau kepanjangan
+                            overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 4),
                           Text(
@@ -233,14 +271,32 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
 
-              // GROUP KANAN: ICON NOTIFIKASI
-              IconButton(
-                onPressed: () {},
-                icon: Icon(
-                    Icons.notifications_none,
-                    color: foregroundPrimaryColor,
-                    size: 28
-                ),
+              // GROUP KANAN: ACTIONS
+              Row(
+                mainAxisSize: MainAxisSize.min, // Agar Row tidak mengambil semua space
+                children: [
+                  // Icon Notifikasi (Yang lama)
+                  IconButton(
+                    onPressed: () {},
+                    icon: Icon(
+                      Icons.notifications_none,
+                      color: foregroundPrimaryColor,
+                      size: 28,
+                    ),
+                    tooltip: 'Notifications',
+                  ),
+
+                  // [BARU] Icon Logout
+                  IconButton(
+                    onPressed: _handleLogout, // Panggil fungsi logout
+                    icon: Icon(
+                      Icons.logout,
+                      color: foregroundPrimaryColor, // Warna putih/sesuai tema header
+                      size: 24, // Sedikit lebih kecil dari notif agar seimbang
+                    ),
+                    tooltip: 'Logout',
+                  ),
+                ],
               ),
             ],
           ),
@@ -248,7 +304,6 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(height: 24),
 
           // --- STATISTIK (GPA, CREDITS, COURSES) ---
-          // Bagian ini tidak berubah
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [

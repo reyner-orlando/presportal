@@ -39,4 +39,23 @@ class VenueService {
   Future<void> deleteVenue(String id) async {
     await _venuesRef.doc(id).delete();
   }
+
+  Future<void> updateVenue({
+    required String id,
+    required String name,
+    required String location,
+    required String category,
+    required int capacity,
+    required List<String> facilities,
+  }) async {
+    await _venuesRef.doc(id).update({
+      'name': name,
+      'location': location,
+      'category': category,
+      'capacity': capacity,
+      'facilities': facilities,
+      'updatedAt': FieldValue.serverTimestamp(), // Opsional
+    });
+  }
+
 }
