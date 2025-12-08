@@ -2,14 +2,7 @@ import 'package:flutter/material.dart';
 import 'HomePage.dart';
 import 'RoomBookingPage.dart';
 import 'AdminPage.dart';
-// [OPSIONAL] Buat file ProfilePage.dart terpisah, atau pakai placeholder di bawah
-class ProfilePage extends StatelessWidget {
-  const ProfilePage({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: Text("Profile Page")));
-  }
-}
+import 'ProfilePage.dart';
 
 class HomeWrapper extends StatefulWidget {
   final String userRole;
@@ -63,7 +56,9 @@ class _HomeWrapperState extends State<HomeWrapper> {
       pages.add(const AdminPage());
     }
 
-    pages.add(const ProfilePage());
+    pages.add(
+        ProfilePage(userId: widget.userId) // Kirim userId ke ProfilePage
+    );
 
     List<BottomNavigationBarItem> navItems = [
       BottomNavigationBarItem(

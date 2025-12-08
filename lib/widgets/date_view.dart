@@ -113,16 +113,25 @@ class _DateViewState extends State<DateView> {
                 // ------------ VENUE DROPDOWN ------------
                 StreamBuilder<List<Booking>>(
                   stream: widget.bookService.getBookingsByDate(_selectedDay),
-
                   builder: (context, bookingSnapshot) {
-                    if(!bookingSnapshot.hasData){
-                      return const Center(child:CircularProgressIndicator());
+                    if (!bookingSnapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator());
                     }
 
-                    final bookedVenueIds = bookingSnapshot.data!
+                    // 1. Ambil Booking Valid (Bukan Rejected)
+                    final validBookings = bookingSnapshot.data!
                         .where((b) => b.status != 'Rejected')
-                        .map((b) => b.venueId)
-                        .toSet();
+                        .toList();
+
+                    // 2. [LOGIKA BARU] Hitung Booking per Venue
+                    // Hasilnya misal: {'VenueA': 1, 'VenueB': 2}
+                    Map<String, int> venueBookingCounts = {};
+                    for (var b in validBookings) {
+                      venueBookingCounts[b.venueId] = (venueBookingCounts[b.venueId] ?? 0) + 1;
+                    }
+
+                    // 3. Tentukan Total Slot Maksimal
+                    int maxSlots = timeSlot.length; // Isinya 2 (sesuai list timeSlot Anda)
 
                     return StreamBuilder<QuerySnapshot>(
                       stream: FirebaseFirestore.instance.collection('venues').orderBy('name').snapshots(),
@@ -135,13 +144,18 @@ class _DateViewState extends State<DateView> {
                           return const Text("No venues available in database");
                         }
 
-                        // --- INI LOGIKA FILTERNYA ---
-                        // Kita filter docs: Hanya ambil venue yang ID-nya TIDAK ADA di bookedVenueIds
+                        // 4. [FILTER BARU]
+                        // Tampilkan venue HANYA JIKA jumlah bookingnya < maxSlots
                         final availableVenues = venueSnapshot.data!.docs.where((doc) {
-                          return !bookedVenueIds.contains(doc.id);
+                          String vId = doc.id;
+                          int currentCount = venueBookingCounts[vId] ?? 0;
+
+                          // Kalau booking baru 1, dan max 2 -> TRUE (Muncul)
+                          // Kalau booking sudah 2, dan max 2 -> FALSE (Hilang)
+                          return currentCount < maxSlots;
                         }).toList();
 
-                        // Cek jika setelah difilter ternyata habis (semua ruangan penuh)
+                        // Cek jika semua ruangan PENUH TOTAL
                         if (availableVenues.isEmpty) {
                           return Container(
                             padding: const EdgeInsets.all(12),
@@ -154,40 +168,45 @@ class _DateViewState extends State<DateView> {
                           );
                         }
 
-                        // Mapping data venue yang tersisa ke DropdownMenuItem
+                        // Mapping data venue ke DropdownMenuItem
                         List<DropdownMenuItem<String>> venueItems = availableVenues.map((doc) {
                           Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
                           return DropdownMenuItem<String>(
                             value: doc.id,
-                            child: Text(data['name']), // Tampilkan nama, tapi value-nya ID
+                            child: Text(data['name']),
                           );
                         }).toList();
 
-                        // ---------------------------------------------
-                        // VALIDASI NILAI TERPILIH (PENTING!)
-                        // Jika user ganti tanggal, dan venue yang tadinya dipilih ternyata penuh di tanggal baru,
-                        // kita harus reset selectedVenueId jadi null agar tidak error.
-                        if (selectedVenueId != null && !bookedVenueIds.contains(selectedVenueId)) {
-                          // Aman, venue yang dipilih masih available
-                        } else if (selectedVenueId != null && bookedVenueIds.contains(selectedVenueId)) {
-                          // Venue yang dipilih ternyata sudah dibooking orang lain/tanggal lain
-                          // Kita reset visualnya (walaupun setState idealnya tidak di dalam build,
-                          // untuk dropdown biasanya value akan otomatis null jika tidak ada di items,
-                          // tapi lebih aman kita handle logic UI-nya)
-                          selectedVenueId = null;
+                        // 5. Validasi Reset Selection
+                        // Jika venue yang sedang dipilih tiba-tiba penuh (karena realtime update), reset pilihan.
+                        if (selectedVenueId != null) {
+                          int currentCount = venueBookingCounts[selectedVenueId] ?? 0;
+                          if (currentCount >= maxSlots) {
+                            // Reset UI agar user tidak booking ruangan penuh
+                            // Perlu delay frame sedikit atau handle di setState berikutnya idealnya,
+                            // tapi untuk logic dropdown sederhana ini cukup null-check di button confirm
+                            // atau biarkan logic validasi akhir menangani.
+                            // Di sini kita biarkan selectedVenueId tapi logic dropdown akan error visual
+                            // kalau itemnya hilang, jadi sebaiknya di-handle:
+                            if (!availableVenues.any((v) => v.id == selectedVenueId)) {
+                              selectedVenueId = null;
+                            }
+                          }
                         }
-                        // ---------------------------------------------
 
                         return DropdownButtonFormField<String>(
                           decoration: const InputDecoration(labelText: 'Choose available venue'),
-                          value: selectedVenueId, // Pastikan value ini ada di list items
+                          value: selectedVenueId,
                           items: venueItems,
                           hint: const Text("Choose one"),
                           onChanged: (String? newId) {
                             setState(() {
                               selectedVenueId = newId;
 
-                              // Cari nama venue berdasarkan ID yang dipilih dari list yang sudah difilter
+                              // PENTING: Reset pilihan jam saat ganti ruangan
+                              selectedSlotId = null;
+                              selectedSlotTime = null;
+
                               final selectedDoc = availableVenues.firstWhere((doc) => doc.id == newId);
                               selectedVenueName = selectedDoc['name'];
                             });
