@@ -57,7 +57,7 @@ class MyApp extends StatelessWidget {
               final difference = DateTime.now().difference(lastSignIn);
 
               // Ganti .inMinutes dengan .inHours jika sudah siap rilis (misal 1 Jam)
-              if (difference.inMinutes >= 1) {
+              if (difference.inMinutes >= 60) {
 
                 // Logout Paksa
                 Future.microtask(() => FirebaseAuth.instance.signOut());
@@ -67,7 +67,6 @@ class MyApp extends StatelessWidget {
               }
             }
             // --------------------------------------------------
-
 
             // --------------------------------------------------
             // B. AMBIL DATA PROFIL (JIKA WAKTU AMAN)

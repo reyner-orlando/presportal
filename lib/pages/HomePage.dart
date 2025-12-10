@@ -3,9 +3,7 @@ import 'RoomBookingPage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Tambahkan ini
 import 'LoginPage.dart'; // Tambahkan ini agar bisa kembali ke Login
-// import 'HomeWrapper.dart';
-// Ganti dengan paket ikon yang Anda gunakan (misalnya: 'package:flutter_feather_icons/flutter_feather_icons.dart')
-// Untuk contoh ini, saya akan menggunakan ikon dari Material Icons.
+import 'ProfilePage.dart';
 
 class HomePage extends StatefulWidget {
   final String userName;
@@ -42,7 +40,7 @@ class _HomePageState extends State<HomePage> {
           userName: widget.userName
       )
     },
-    {'title': 'Profile', 'icon': Icons.person, 'color': Colors.blue},
+    {'title': 'Profile', 'icon': Icons.person, 'color': Colors.blue, 'route': ProfilePage(userId: widget.userId)},
   ];
 
   final List<Map<String, dynamic>> todayClasses = const [
@@ -258,7 +256,7 @@ class _HomePageState extends State<HomePage> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Student ID: ${widget.userId}',
+                            '${widget.userRole == 'Student' ? 'Student ID' : 'Lecturer ID'}: ${widget.userId}',
                             style: TextStyle(
                               fontSize: 14,
                               color: foregroundPrimaryColor.withOpacity(0.8),

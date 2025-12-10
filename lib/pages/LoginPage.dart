@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'HomeWrapper.dart'; // Import Dashboard
-import 'RegisterPage.dart'; // Import Register
+import 'HomeWrapper.dart';
+import 'RegisterPage.dart';
+import 'ForgotPasswordPage.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -43,7 +44,7 @@ class _LoginScreenState extends State<LoginPage> {
     final String password = _passwordController.text;
 
     if (identifier.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Email atau Password wajib diisi!')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Email or Password must be filled!')));
       return;
     }
     setState(() {
@@ -65,7 +66,7 @@ class _LoginScreenState extends State<LoginPage> {
             .collection('users').where('email', isEqualTo: finalEmail).limit(1).get();
 
         if (emailSnapshot.docs.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Email tidak terdaftar.')));
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Email is not registered.')));
           return;
         }
 
@@ -79,7 +80,7 @@ class _LoginScreenState extends State<LoginPage> {
         userDoc = await FirebaseFirestore.instance.collection('users').doc(uniqueDocId).get();
 
         if (!userDoc.exists) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ID (NIM/Dosen) tidak terdaftar.')));
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('(Student/Lecturer) ID not registered.')));
           return;
         }
 
@@ -87,7 +88,7 @@ class _LoginScreenState extends State<LoginPage> {
       }
 
       if (!userDoc.exists) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Gagal mendapatkan data pengguna.')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to fetch user data.')));
         return;
       }
 
@@ -106,7 +107,7 @@ class _LoginScreenState extends State<LoginPage> {
         context,
         MaterialPageRoute(
           builder: (context) => HomeWrapper(
-            userName: userData['full_name'] ?? 'Pengguna',
+            userName: userData['full_name'] ?? 'User',
             userId: uniqueDocId,
             userRole: userRole,
           ),
@@ -114,21 +115,21 @@ class _LoginScreenState extends State<LoginPage> {
       );
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Login berhasil! Selamat datang, ${userData['full_name'] ?? 'Pengguna'} (${userRole}).'), backgroundColor: primaryBlue),
+        SnackBar(content: Text('Login Successfull! Welcome, ${userData['full_name'] ?? 'User'} (${userRole}).'), backgroundColor: primaryBlue),
       );
 
     } on FirebaseAuthException catch (e) {
       String errorMessage;
       if (e.code == 'user-not-found' || e.code == 'invalid-credential' || e.code == 'wrong-password') {
-        errorMessage = 'Email atau Password salah.';
+        errorMessage = 'Wrong Email or Password .';
       } else {
-        errorMessage = 'Login gagal: ${e.message}';
+        errorMessage = 'Login failed: ${e.message}';
       }
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage)));
     } on FirebaseException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error Database: ${e.message}. Cek aturan Firestore.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error Database: ${e.message}.')));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Terjadi kesalahan tak terduga.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unexpected Error Occurred.')));
     } finally {
       // [MODIFIKASI 3] Matikan loading apa pun yang terjadi (Sukses/Gagal)
       // Cek mounted agar tidak error jika user sudah pindah halaman
@@ -282,8 +283,8 @@ class _LoginScreenState extends State<LoginPage> {
 
                       // Input Email
                       _buildInputField(
-                        label: 'Student Email',
-                        hintText: 'student@president.ac.id',
+                        label: 'Email',
+                        hintText: 'Enter your email',
                         controller: _identifierController,
                         type: TextInputType.emailAddress,
                       ),
@@ -342,8 +343,11 @@ class _LoginScreenState extends State<LoginPage> {
                       Center(
                         child: TextButton(
                           onPressed: () {
-                            // Implementasi logika lupa password
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fungsi Lupa Password belum diimplementasi.')));
+                            // [MODIFIKASI] Navigasi ke Halaman Forgot Password
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const ForgotPasswordPage()),
+                            );
                           },
                           child: Text('Forgot your password?', style: TextStyle(color: primaryBlue, fontWeight: FontWeight.w600)),
                         ),
@@ -353,7 +357,7 @@ class _LoginScreenState extends State<LoginPage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text('New student? ',
+                          Text('New user? ',
                               textAlign: TextAlign.center,
                               style: TextStyle(color: secondaryTextColor.withOpacity(0.7))),
                           TextButton(
@@ -375,7 +379,7 @@ class _LoginScreenState extends State<LoginPage> {
 
                 // 3. FOOTER
                 Text(
-                  '© 2024 President University. All rights reserved.',
+                  '© 2025 PresPortal. All rights reserved.',
                   style: Theme.of(context).textTheme.bodySmall!.copyWith(color: secondaryTextColor),
                   textAlign: TextAlign.center,
                 ),

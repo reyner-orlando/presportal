@@ -31,16 +31,18 @@ class Booking {
   factory Booking.fromMap(String id, Map<String, dynamic> map) {
     return Booking(
       id: id,
-      activityType: map['activitytype'] ?? '',
+      activityType: map['activityType'] ?? 'Unknown Activity',
+      status: map['status'] ?? 'Pending',
       bookingId: map['bookingid'] ?? '',
-      date: (map['date'] as Timestamp).toDate(),
-      status: map['status'] ?? '',
+      date: (map['date'] is Timestamp)
+          ? (map['date'] as Timestamp).toDate()
+          : DateTime.now(),
       studentId: map['userid'],
       studentName: map['username'],
       venueId: map['venueid'],
       venueName: map['venuename'],
-      timeId: map['timeid'],
-      timeSlot: map['timeslot'],
+      timeId: map['timeId'] ?? map['slotId'] ?? '', // Cek kedua kemungkinan nama field
+      timeSlot: map['timeSlot'] ?? map['slotTime'] ?? '-',
     );
   }
 

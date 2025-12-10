@@ -25,13 +25,10 @@ class _RegisterScreenState extends State<RegisterPage> {
   bool _agreedToTerms = false;
   bool _isLoading = false;
 
-  // --- DOMAIN WAJIB TUNGGAL ---
-  final String requiredSingleDomain = '@student.president.ac.id';
-
   // Tambahkan Instance Auth
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // --- DEFINISI WARNA BARU BERDASARKAN HEX CODE ---
+  // --- DEFINISI WARNA BERDASARKAN HEX CODE ---
   final Color primaryBlue = const Color(0xFF005696); // Deep Blue
   final Color accentBlack = Colors.black; // Hitam sebagai aksen
   final Color backgroundColor = const Color(0xFFF5F5F5); // Light Grey
@@ -58,14 +55,13 @@ class _RegisterScreenState extends State<RegisterPage> {
     final String uniqueId = _selectedRole == 'Student'
         ? _nimController.text.trim()
         : _lecturerIdController.text.trim();
-    final String requiredDomain = requiredSingleDomain;
     final String idFieldName = _selectedRole == 'Student' ? 'nim' : 'lecturer_id';
 
     // --- VALIDASI PERAN ---
     if (_selectedRole == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Peran (Student/Lecturer) wajib dipilih.', style: TextStyle(color: Colors.white)),
+          content: Text('Must choose (Student/Lecturer) role.', style: TextStyle(color: Colors.white)),
           backgroundColor: accentBlack,
         ),
       );
@@ -73,27 +69,37 @@ class _RegisterScreenState extends State<RegisterPage> {
       return;
     }
 
-    // Validasi Domain Email
+    // --- [MODIFIKASI] VALIDASI DOMAIN DINAMIS ---
+    String requiredDomain;
+    if (_selectedRole == 'Student') {
+      requiredDomain = '@student.president.ac.id';
+    } else {
+      requiredDomain = '@president.ac.id';
+    }
+
     if (!email.endsWith(requiredDomain)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Email harus menggunakan domain $requiredDomain.', style: const TextStyle(color: Colors.white)),
+          content: Text('Email for $_selectedRole must use domain $requiredDomain', style: const TextStyle(color: Colors.white)),
           backgroundColor: accentBlack,
         ),
       );
       setState(() => _isLoading = false);
       return;
     }
+    // ---------------------------------------------
 
     // Validasi Field Wajib Umum
     if (uniqueId.isEmpty || email.isEmpty || fullName.isEmpty || password.isEmpty || confirmPassword.isEmpty || _selectedGender == null || !_agreedToTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Semua field dan persetujuan wajib diisi!'), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('All fields and agreement must be filled!'), backgroundColor: Colors.red));
+      setState(() => _isLoading = false); // Jangan lupa matikan loading
       return;
     }
 
     // Validasi Password
     if (password != confirmPassword) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password dan Konfirmasi Password tidak cocok!'), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password and Confirm Password is not match!'), backgroundColor: Colors.red));
+      setState(() => _isLoading = false);
       return;
     }
     // --- END VALIDASI ---
@@ -108,7 +114,7 @@ class _RegisterScreenState extends State<RegisterPage> {
 
       await FirebaseFirestore.instance.collection('users').doc(uniqueId).set({
         'user_id': userId,
-        idFieldName: uniqueId,
+        idFieldName: uniqueId, // nim atau lecturer_id
         'email': email,
         'full_name': fullName,
         'gender': _selectedGender,
@@ -116,9 +122,10 @@ class _RegisterScreenState extends State<RegisterPage> {
         'registration_date': FieldValue.serverTimestamp(),
         'status': 'active',
         'profile_image_url': 'https://picsum.photos/seed/default/200/200',
-        'gpa': 3.6,
-        'courses': 10,
-        'credits': 45,
+        // Default stats bisa disesuaikan kalau Lecturer tidak butuh GPA/Credits
+        'gpa': _selectedRole == 'Student' ? 3.6 : 0.0,
+        'courses': 0,
+        'credits': 0,
       });
       if (!mounted) return;
       Navigator.pushReplacement(
@@ -127,19 +134,20 @@ class _RegisterScreenState extends State<RegisterPage> {
       );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Pendaftaran ID $uniqueId berhasil! Silakan Login.'),
+          content: Text('ID $uniqueId registered successfully! Please Login.'),
           backgroundColor: primaryBlue,
         ),
       );
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
+      setState(() => _isLoading = false);
       String errorMessage;
       if (e.code == 'weak-password') {
-        errorMessage = 'Password terlalu lemah.';
+        errorMessage = 'Password is too weak.';
       } else if (e.code == 'email-already-in-use') {
-        errorMessage = 'Email sudah terdaftar. Silakan login.';
+        errorMessage = 'Email is already registered. Please login.';
       } else {
-        errorMessage = 'Gagal mendaftar: ${e.message}';
+        errorMessage = 'Failed to register: ${e.message}';
       }
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage), backgroundColor: Colors.red));
     } on FirebaseException catch (e) {
@@ -149,8 +157,9 @@ class _RegisterScreenState extends State<RegisterPage> {
       setState(() => _isLoading = false);
     } catch (e) {
       if (!mounted) return;
+      setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Terjadi kesalahan tak terduga.'), backgroundColor: Colors.red),
+        const SnackBar(content: Text('Unexpected Error.'), backgroundColor: Colors.red),
       );
     }
   }
@@ -160,10 +169,10 @@ class _RegisterScreenState extends State<RegisterPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Peran Anda', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
+        Text('Your Role', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
         const SizedBox(height: 10),
         Card(
-          elevation: 4, // Card lebih menonjol
+          elevation: 4,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -190,10 +199,10 @@ class _RegisterScreenState extends State<RegisterPage> {
             _selectedRole = value;
             _nimController.clear();
             _lecturerIdController.clear();
-            _emailController.clear();
+            _emailController.clear(); // Bersihkan email saat ganti role agar hint terlihat
           });
         },
-        activeColor: color, // Deep Blue
+        activeColor: color,
       ),
       contentPadding: EdgeInsets.zero,
       dense: true,
@@ -206,12 +215,15 @@ class _RegisterScreenState extends State<RegisterPage> {
       return const SizedBox.shrink();
     }
 
-    String idLabel = _selectedRole == 'Student' ? 'NIM Mahasiswa' : 'ID Dosen';
+    String idLabel = _selectedRole == 'Student' ? 'Student ID' : 'Lecturer ID';
     TextEditingController idController = _selectedRole == 'Student' ? _nimController : _lecturerIdController;
     TextInputType idType = _selectedRole == 'Student' ? TextInputType.number : TextInputType.text;
     IconData idIcon = _selectedRole == 'Student' ? Icons.badge : Icons.school;
 
-    String hintDomain = requiredSingleDomain;
+    // [MODIFIKASI] Hint Dinamis
+    String hintDomain = _selectedRole == 'Student'
+        ? '@student.president.ac.id'
+        : '@president.ac.id';
 
     return Column(
       children: [
@@ -221,14 +233,14 @@ class _RegisterScreenState extends State<RegisterPage> {
 
         // Input Email Kampus
         _buildInputField(
-          'Email Kampus',
+          'University Email',
           Icons.email,
           TextInputType.emailAddress,
           primaryColor,
           accentColor,
           controller: _emailController,
-          hintText: 'contoh' + hintDomain,
-          hintColor: accentColor, // Icon Hitam, Hint Hitam
+          hintText: 'ex: name$hintDomain', // Menampilkan contoh format
+          hintColor: Colors.grey,
         ),
         const SizedBox(height: 15),
       ],
@@ -243,30 +255,29 @@ class _RegisterScreenState extends State<RegisterPage> {
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      backgroundColor: primaryColor, // Background Scaffold Deep Blue
+      backgroundColor: primaryColor,
       appBar: AppBar(
-        title: const Text('Daftar Akun Baru'),
-        backgroundColor: primaryColor, // Deep Blue
+        title: const Text('Register New Account'),
+        backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
-        // Tombol Back Deep Blue (default)
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Area Kosong/Padding di Atas (Deep Blue)
+            // Area Kosong/Padding di Atas
             Container(
               height: screenHeight * 0.05,
               color: primaryColor,
             ),
 
-            // FORM CARD CONTAINER (Bagian yang menarik)
+            // FORM CARD CONTAINER
             Container(
               width: double.infinity,
               constraints: BoxConstraints(minHeight: screenHeight * 0.95),
               padding: const EdgeInsets.only(top: 30, left: 25.0, right: 25.0, bottom: 40),
               decoration: BoxDecoration(
-                color: backgroundColor, // Light Grey Background
+                color: backgroundColor,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(35)),
                 boxShadow: [
                   BoxShadow(
@@ -279,10 +290,6 @@ class _RegisterScreenState extends State<RegisterPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Judul Halaman Dihapus:
-                  // Text('Buat Akun Kampus', style: Theme.of(context).textTheme.headlineSmall!.copyWith(fontWeight: FontWeight.bold, color: primaryColor)),
-
-                  // Menyesuaikan jarak setelah penghapusan judul
                   const SizedBox(height: 10),
 
                   // SELECTION: Role
@@ -290,18 +297,18 @@ class _RegisterScreenState extends State<RegisterPage> {
                   const SizedBox(height: 25),
 
                   // Input Nama Lengkap
-                  _buildInputField('Nama Lengkap', Icons.person, TextInputType.text, primaryColor, accentColor, controller: _fullNameController),
+                  _buildInputField('Full Name', Icons.person, TextInputType.text, primaryColor, accentColor, controller: _fullNameController),
                   const SizedBox(height: 15),
 
                   // Input Dinamis (NIM/ID Dosen & Email)
                   _buildDynamicInputFields(primaryColor, accentColor),
 
                   // Input Password
-                  _buildPasswordField('Buat Password', primaryColor, accentColor, controller: _passwordController),
+                  _buildPasswordField('Password', primaryColor, accentColor, controller: _passwordController),
                   const SizedBox(height: 15),
 
                   // Input Konfirmasi Password
-                  _buildPasswordField('Konfirmasi Password', primaryColor, accentColor, controller: _confirmPasswordController),
+                  _buildPasswordField('Confirm Password', primaryColor, accentColor, controller: _confirmPasswordController),
                   const SizedBox(height: 30),
 
                   // SELECTION: Gender
@@ -318,7 +325,7 @@ class _RegisterScreenState extends State<RegisterPage> {
                     child: ElevatedButton(
                       onPressed: _registerUser,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryColor, // Deep Blue
+                        backgroundColor: primaryColor,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 18),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -326,7 +333,7 @@ class _RegisterScreenState extends State<RegisterPage> {
                       ),
                       child: _isLoading
                           ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text('DAFTAR', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),),
+                          : const Text('REGISTER', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),),
                   ),
                   const SizedBox(height: 20),
 
@@ -334,7 +341,7 @@ class _RegisterScreenState extends State<RegisterPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text("Sudah punya akun?"),
+                      const Text("Already have an account?"),
                       TextButton(
                         onPressed: () {
                           Navigator.pushReplacement(
@@ -343,7 +350,7 @@ class _RegisterScreenState extends State<RegisterPage> {
                           );
                         },
                         child: Text(
-                          'Login di sini',
+                          'Login here',
                           style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
                         ),
                       ),
@@ -372,8 +379,8 @@ class _RegisterScreenState extends State<RegisterPage> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Row(children: [
-              Expanded(child: _buildRadioTile('Laki-laki', color)),
-              Expanded(child: _buildRadioTile('Perempuan', color)),
+              Expanded(child: _buildRadioTile('Male', color)),
+              Expanded(child: _buildRadioTile('Female', color)),
             ]),
           ),
         ),
@@ -399,12 +406,11 @@ class _RegisterScreenState extends State<RegisterPage> {
     return Row(
       children: [
         Checkbox(value: _agreedToTerms, onChanged: (bool? value) { setState(() { _agreedToTerms = value!; }); }, activeColor: color),
-        Expanded(child: Text('Saya setuju dengan Syarat & Ketentuan yang berlaku.', style: TextStyle(fontSize: 14, color: Colors.grey.shade700))),
+        Expanded(child: Text('I agree to the Terms & Conditions.', style: TextStyle(fontSize: 14, color: Colors.grey.shade700))),
       ],
     );
   }
 
-  // Input Field Ditingkatkan
   Widget _buildInputField(String label, IconData icon, TextInputType type, Color color, Color accentColor, {required TextEditingController controller, String? hintText, Color? hintColor}) {
     return Container(
       decoration: BoxDecoration(
@@ -423,17 +429,17 @@ class _RegisterScreenState extends State<RegisterPage> {
         keyboardType: type,
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: TextStyle(color: color), // Label Deep Blue
+          labelStyle: TextStyle(color: color),
           hintText: hintText,
           hintStyle: TextStyle(color: hintColor ?? Colors.grey),
-          prefixIcon: Icon(icon, color: accentColor), // Icon Hitam
+          prefixIcon: Icon(icon, color: accentColor),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none, // Hapus border
+            borderSide: BorderSide.none,
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: color, width: 2.0), // Border fokus Deep Blue
+            borderSide: BorderSide(color: color, width: 2.0),
           ),
           filled: true,
           fillColor: Colors.white,
@@ -443,7 +449,6 @@ class _RegisterScreenState extends State<RegisterPage> {
     );
   }
 
-  // Password Field Ditingkatkan
   Widget _buildPasswordField(String label, Color color, Color accentColor, {required TextEditingController controller}) {
     return Container(
       decoration: BoxDecoration(
@@ -462,15 +467,15 @@ class _RegisterScreenState extends State<RegisterPage> {
         obscureText: true,
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: TextStyle(color: color), // Label Deep Blue
-          prefixIcon: Icon(Icons.lock, color: accentColor), // Icon Hitam
+          labelStyle: TextStyle(color: color),
+          prefixIcon: Icon(Icons.lock, color: accentColor),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: color, width: 2.0), // Border fokus Deep Blue
+            borderSide: BorderSide(color: color, width: 2.0),
           ),
           filled: true,
           fillColor: Colors.white,
